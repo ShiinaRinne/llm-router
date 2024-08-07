@@ -4,20 +4,28 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/kcolemangt/llm-router/utils"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/kcolemangt/llm-router/model"
 	"github.com/kcolemangt/llm-router/proxy"
-	"github.com/kcolemangt/llm-router/utils"
 	"go.uber.org/zap"
 )
 
 // HandleRequest is the main HTTP handler function that processes incoming requests
 func HandleRequest(cfg *model.Config, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	// Authenticate the request
 	authHeader := r.Header.Get("Authorization")
+	r.Header.Del("Origin") // 当存在这个 Header 时, 会出 403 错误
 	expectedAuthHeader := "Bearer " + cfg.GlobalAPIKey
 	if authHeader != expectedAuthHeader {
 		cfg.Logger.Warn("Invalid or missing API key",
